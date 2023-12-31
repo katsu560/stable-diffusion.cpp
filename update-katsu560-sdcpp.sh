@@ -1601,8 +1601,9 @@ do_test()
 	fi
 }
 
-# func:cp_script ver: 2023.12.30
-# copy srcfile to dstfile.mmdd and dstfile
+CPSCRIPTFILES=
+# func:cp_script ver: 2023.12.31
+# copy srcfile to dstfile.mmdd and dstfile, store dstfiles to CPSCRIPTFILES
 # cp_script SRC DST
 cp_script()
 {
@@ -1640,6 +1641,7 @@ cp_script()
 	if [ $NOEXEC -eq $RET_FALSE ]; then
 		cp -p "$SRC" "$DST"
 	fi
+	CPSCRIPTFILES="$DSTDT $DST"
 }
 test_cp_script()
 {
@@ -1822,8 +1824,10 @@ git_script()
 			if [ $NOEXEC -eq $RET_FALSE ]; then
 				cp_script $BASEDIR/$FUPDATE $FUPDATEG
 				find_latest DTTMSHSTART
-				ADDFILES="$ADDFILES $FUPDATEG"
-				COMMITFILES="$COMMITFILES $FUPDATEG"
+				#ADDFILES="$ADDFILES $FUPDATEG"
+				#COMMITFILES="$COMMITFILES $FUPDATEG"
+				ADDFILES="$ADDFILES $CPSCRIPTFILES"
+				COMMITFILES="$COMMITFILES $CPSCRIPTFILES"
 			fi
 		else
 			# check diff, copy
@@ -1840,8 +1844,10 @@ git_script()
 					msg "diff: copy: $BASEDIR/$FUPDATE $FUPDATEG"
 					cp_script $BASEDIR/$FUPDATE $FUPDATEG
 					find_latest DTTMSHSTART
-					ADDFILES="$ADDFILES $FUPDATEG"
-					COMMITFILES="$COMMITFILES $FUPDATEG"
+					#ADDFILES="$ADDFILES $FUPDATEG"
+					#COMMITFILES="$COMMITFILES $FUPDATEG"
+					ADDFILES="$ADDFILES $CPSCRIPTFILES"
+					COMMITFILES="$COMMITFILES $CPSCRIPTFILES"
 				fi
 			fi
 		fi
@@ -1883,8 +1889,10 @@ git_script()
 					msg "diff: copy: $BASEDIR/$FFIXSH $FFIXSHG"
 					cp_script $BASEDIR/$FFIXSH $FFIXSHG
 					find_latest DTTMSHSTART
-					ADDFILES="$ADDFILES $FFIXSHG"
-					COMMITFILES="$COMMITFILES $FFIXSHG"
+					#ADDFILES="$ADDFILES $FFIXSHG"
+					#COMMITFILES="$COMMITFILES $FFIXSHG"
+					ADDFILES="$ADDFILES $CPSCRIPTFILES"
+					COMMITFILES="$COMMITFILES $CPSCRIPTFILES"
 				fi
 			fi
 		fi
@@ -1897,8 +1905,10 @@ git_script()
 			msg "new: copy: $BASEDIR/$FMKZIP $FMKZIPG"
 			cp_script $BASEDIR/$FMKZIP $FMKZIPG
 			find_latest DTTMSHSTART
-			ADDFILES="$ADDFILES $FMKZIPG"
-			COMMITFILES="$COMMITFILES $FMKZIPG"
+			#ADDFILES="$ADDFILES $FMKZIPG"
+			#COMMITFILES="$COMMITFILES $FMKZIPG"
+			ADDFILES="$ADDFILES $CPSCRIPTFILES"
+			COMMITFILES="$COMMITFILES $CPSCRIPTFILES"
 		else
 			# check diff, copy
 			msg "diff $FMKZIPG $BASEDIR/$FMKZIP"
@@ -1914,8 +1924,10 @@ git_script()
 					msg "diff: copy: $BASEDIR/$FMKZIP $FMKZIPG"
 					cp_script $BASEDIR/$FMKZIP $FMKZIPG
 					find_latest DTTMSHSTART
-					ADDFILES="$ADDFILES $FMKZIPG"
-					COMMITFILES="$COMMITFILES $FMKZIPG"
+					#ADDFILES="$ADDFILES $FMKZIPG"
+					#COMMITFILES="$COMMITFILES $FMKZIPG"
+					ADDFILES="$ADDFILES $CPSCRIPTFILES"
+					COMMITFILES="$COMMITFILES $CPSCRIPTFILES"
 				fi
 			fi
 		fi
