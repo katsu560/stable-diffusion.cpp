@@ -1708,8 +1708,6 @@ test_cp_script()
 #msg "test_cp_script"; VERBOSE=2; NOEXEC=$RET_TRUE; test_cp_script; exit 0
 #msg "test_cp_script"; VERBOSE=2; NOEXEC=$RET_FALSE; test_cp_script; exit 0
 
-
-
 # func:git_script ver: 2023.12.31
 # git push scripts, UPDATENAME, FIXSHNAME, MKZIPNAME
 # git_script
