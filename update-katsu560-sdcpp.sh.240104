@@ -1301,11 +1301,14 @@ NGPROMPYYYIOFS="NGPROMPTYYI"
 
 
 # sd-turbo 512x512
-SDTBOPT="--cfg-scale 1.0 --steps 3"
+#SDTBOPT="--cfg-scale 1.0 --steps 3"
+SDTBOPT="--cfg-scale 1.0"
+TBSTEPSOPT=3
 
 #SEEDOPT=1685215400
 #SEEDOPT=685215400
 SEEDOPT=2307593208
+STEPSOPT=10
 
 MKCLEAN=$RET_FALSE
 NOCLEAN=$RET_FALSE
@@ -1313,7 +1316,7 @@ NOCLEAN=$RET_FALSE
 ###
 usage()
 {
-	echo "usage: $MYNAME [-h][-v][-n][-nd][-ncp][-nc][-noavx|avx|avx2][-lv LEVEL][-s SEED] dirname branch cmd"
+	echo "usage: $MYNAME [-h][-v][-n][-nd][-ncp][-nc][-noavx|avx|avx2][-lv LEVEL][-s SEED][-st STEPS] dirname branch cmd"
 	echo "options: (default)"
 	echo "  -h|--help ... this message"
 	echo "  -v|--verbose ... increase verbose message level"
@@ -1325,6 +1328,7 @@ usage()
 	echo "  -noavx|-avx|-avx2 ... set cmake option for no AVX, AVX, AVX2 (AVX)"
 	echo "  -lv|--level LEVEL ... set execution level as LEVEL, min. 1 .. max. 5 ($DOLEVEL)"
 	echo "  -s|--seed SEED ... set SEED ($SEEDOPT)"
+	echo "  -st|--steps STEPS ... set STEPS ($STEPSOPT TB:$TBSTEPSOPT)"
 	echo "  dirname ... directory name ex. 230226up"
 	echo "  branch ... git branch ex. master, gq, devpr"
 	echo "  cmd ... sycpcmkma sy/sync,cp/copy,cmk/cmake,ma/main"
@@ -1360,6 +1364,7 @@ do
 	-avx2)		CMKOPT="$CMKOPTAVX2";;
 	-lv|--level)	shift; DOLEVEL=$1;;
 	-s|--seed)	shift; SEEDOPT=$1;;
+	-st|--steps)	shift; STEPSOPT=$1;;
 	*)		OPTLOOP=$RET_FALSE; break;;
 	esac
 	shift
@@ -1376,7 +1381,7 @@ BRANCH="$2"
 CMD="$3"
 
 xmsg "VERBOSE:$VERBOSE NOEXEC:$NOEXEC NODIE:$NODIE NOCOPY:$NOCOPY"
-xmsg "NOCLEAN:$NOCLEAN LEVEL:$DOLEVEL SEED:$SEEDOPT"
+xmsg "NOCLEAN:$NOCLEAN LEVEL:$DOLEVEL SEED:$SEEDOPT STEPS:$STEPSOPT $TBSTEPSOPT"
 
 ###
 GITID=""
@@ -2075,7 +2080,7 @@ get_newnum()
 # do_sd FHEAD VARPROMPT VARNGPROMPT MODEL TYPE QTYPE
 do_sd()
 {
-	local RETCODE FHEAD VARPROMPT PROMPTTXT VARNGPROMPT NGPROMPTTXT MODEL TYPE QTYPE DT SEED
+	local RETCODE FHEAD VARPROMPT PROMPTTXT VARNGPROMPT NGPROMPTTXT MODEL TYPE QTYPE DT SEED STEPS
 
 	RETCODE=$RET_OK
 
@@ -2133,6 +2138,12 @@ do_sd()
 
 	DT=`date '+%y%m%d'`
 	SEED=$SEEDOPT
+	STEPS=$STEPSOPT
+	# turbo
+	case $TYPE in
+	sdtb)	STEPS=$TBSTEPSOPT;;
+	sdxltb)	STEPS=$TBSTEPSOPT;;
+	esac
 
 	#msg "./$DIRNAME/sd -m ../models/sd-v1-4.ckpt -t $QTYPE $SDOPT -s $SEED -p \"$PROMPTGIRL\" -o $OUT"
 	#./$DIRNAME/sd -m ../models/sd-v1-4.ckpt -t $QTYPE $SDOPT -s $SEED -p "$PROMPTGIRL" -o $OUT  || die 270 "do sd failed"
@@ -2141,8 +2152,8 @@ do_sd()
 		#QTYPE=
 		OUTBASE="$FHEAD-$TYPE-$DT-$SEED"
 		OUT=`get_newnum $OUTBASE`
-		msg "./$DIRNAME/sd -m $MODEL $SDOPT -s $SEED -p \"$PROMPTTXT\" -n \"$NGPROMPTTXT\" -o $OUT"
-		./$DIRNAME/sd -m $MODEL $SDOPT -s $SEED -p "$PROMPTTXT" -n "$NGPROMPTTXT" -o $OUT
+		msg "./$DIRNAME/sd -m $MODEL $SDOPT -s $SEED --steps $STEPS --p \"$PROMPTTXT\" -n \"$NGPROMPTTXT\" -o $OUT"
+		./$DIRNAME/sd -m $MODEL $SDOPT -s $SEED --steps $STEPS -p "$PROMPTTXT" -n "$NGPROMPTTXT" -o $OUT
 		RETCODE=$?
 		if [ ! $RETCODE -eq $RET_OK ]; then
 			emsg "do sd failed"
@@ -2152,8 +2163,8 @@ do_sd()
 		#QTYPE=q8_0
 		OUTBASE="$FHEAD-$TYPE$QTYPE-$DT-$SEED"
 		OUT=`get_newnum $OUTBASE`
-		msg "./$DIRNAME/sd -m $MODEL --type $QTYPE $SDOPT -s $SEED -p \"$PROMPTTXT\" -n \"$NGPROMPTTXT\" -o $OUT"
-		./$DIRNAME/sd -m $MODEL --type $QTYPE $SDOPT -s $SEED -p "$PROMPTTXT" -n "$NGPROMPTTXT" -o $OUT
+		msg "./$DIRNAME/sd -m $MODEL --type $QTYPE $SDOPT -s $SEED --steps $STEPS -p \"$PROMPTTXT\" -n \"$NGPROMPTTXT\" -o $OUT"
+		./$DIRNAME/sd -m $MODEL --type $QTYPE $SDOPT -s $SEED --steps $STEPS -p "$PROMPTTXT" -n "$NGPROMPTTXT" -o $OUT
 		RETCODE=$?
 		if [ ! $RETCODE -eq $RET_OK ]; then
 			emsg "do sd failed"
@@ -2421,7 +2432,8 @@ do_bra7()
 	#SDOPT="--cfg-scale 7 --steps 10"
 	# --sampling-method {euler, euler_a, heun, dpm2, dpm++2s_a, dpm++2m, dpm++2mv2, lcm}
 	#SDOPT="--cfg-scale 7 --steps 10 --strength 0.2 --sampling-method dpm++2mv2"
-	SDOPT="--cfg-scale 7 --steps 10 --strength 0.2 --sampling-method dpm++2mv2 --vae $VAEMSE"
+	#SDOPT="--cfg-scale 7 --steps 10 --strength 0.2 --sampling-method dpm++2mv2 --vae $VAEMSE"
+	SDOPT="--cfg-scale 7 --strength 0.2 --sampling-method dpm++2mv2 --vae $VAEMSE"
 	#SEEDOPT=2307593208
 	xmsg "FHEAD:$FHEAD VARPROMPT:$VARPROMPT VARNGPROMPT:$VARNGPROMPT MODEL:$MODEL TYPE:$TYPE"
 
@@ -2477,7 +2489,8 @@ do_yyi25()
 
 	SDOPTBK="$SDOPT"
 	# --sampling-method {euler, euler_a, heun, dpm2, dpm++2s_a, dpm++2m, dpm++2mv2, lcm}
-	SDOPT="--cfg-scale 10 --steps 10 --strength 0.5 --sampling-method dpm++2mv2 --vae $VAEMSE"
+	#SDOPT="--cfg-scale 10 --steps 10 --strength 0.5 --sampling-method dpm++2mv2 --vae $VAEMSE"
+	SDOPT="--cfg-scale 10 --strength 0.5 --sampling-method dpm++2mv2 --vae $VAEMSE"
 	#SEEDOPT=2307593208
 	xmsg "FHEAD:$FHEAD VARPROMPT:$VARPROMPT VARNGPROMPT:$VARNGPROMPT MODEL:$MODEL TYPE:$TYPE"
 
@@ -2550,7 +2563,8 @@ do_pvc10()
 	SDOPTBK="$SDOPT"
 	# --sampling-method {euler, euler_a, heun, dpm2, dpm++2s_a, dpm++2m, dpm++2mv2, lcm}
 	VAEKL=../models/kl-f8-anime2.ckpt
-	SDOPT="--cfg-scale 7 --steps 10 --strength 0.5 --sampling-method dpm++2mv2 --vae $VAEKL"
+	#SDOPT="--cfg-scale 7 --steps 10 --strength 0.5 --sampling-method dpm++2mv2 --vae $VAEKL"
+	SDOPT="--cfg-scale 7 --strength 0.5 --sampling-method dpm++2mv2 --vae $VAEKL"
 	xmsg "FHEAD:$FHEAD VARPROMPT:$VARPROMPT VARNGPROMPT:$VARNGPROMPT MODEL:$MODEL TYPE:$TYPE"
 
 	if [ ! x"$MAOPT" = xNOEXEC ]; then
