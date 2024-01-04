@@ -2138,12 +2138,12 @@ do_sd()
 
 	DT=`date '+%y%m%d'`
 	SEED=$SEEDOPT
-	STEPS=$STEPSOPT
 	# turbo
 	case $TYPE in
 	sdtb)	STEPS=$TBSTEPSOPT;;
 	sdxltb)	STEPS=$TBSTEPSOPT;;
 	esac
+	STEPS=$STEPSOPT
 
 	#msg "./$DIRNAME/sd -m ../models/sd-v1-4.ckpt -t $QTYPE $SDOPT -s $SEED -p \"$PROMPTGIRL\" -o $OUT"
 	#./$DIRNAME/sd -m ../models/sd-v1-4.ckpt -t $QTYPE $SDOPT -s $SEED -p "$PROMPTGIRL" -o $OUT  || die 270 "do sd failed"
@@ -2659,7 +2659,8 @@ do_sdxltb()
 	FHEAD="girl"
 	VARPROMPT=PROMPTGIRL
 	VARNGPROMPT=NGPROMPTALL
-	MODEL=../models/sd_xl_turbo_1.0.safetensors
+	#MODEL=../models/sd_xl_turbo_1.0.safetensors
+	MODEL=../models/sd_xl_turbo_1.0_fp16.safetensors
 	TYPE=sdxltb
 
 	# make
