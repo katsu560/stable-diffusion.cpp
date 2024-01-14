@@ -25,6 +25,7 @@ endif()
 #option(SD_BUILD_TESTS                "sd: build tests"    ${SD_STANDALONE})
 option(SD_BUILD_EXAMPLES             "sd: build examples" ${SD_STANDALONE})
 option(SD_CUBLAS                     "sd: cuda backend" OFF)
+option(SD_HIPBLAS                    "sd: rocm backend" OFF)
 option(SD_METAL                      "sd: metal backend" OFF)
 option(SD_FLASH_ATTN                 "sd: use flash attention for x4 less memory usage" OFF)
 option(SD_FAST_SOFTMAX               "sd: x1.5 faster softmax, indeterministic (sometimes, same seed don't generate same image), cuda only" OFF)
@@ -46,21 +47,45 @@ if(SD_METAL)
     add_definitions(-DSD_USE_METAL)
 endif()
 
+if (SD_HIPBLAS)
+    message("Use HIPBLAS as backend stable-diffusion")
+    set(GGML_HIPBLAS ON)
+    add_definitions(-DSD_USE_CUBLAS)
+    if(SD_FAST_SOFTMAX)
+        set(GGML_CUDA_FAST_SOFTMAX ON)
+    endif()
+endif ()
+
 if(SD_FLASH_ATTN)
     message("Use Flash Attention for memory optimization")
     add_definitions(-DSD_USE_FLASH_ATTENTION)
 endif()
 
+set(SD_LIB stable-diffusion)
+
+add_library(${SD_LIB} stable-diffusion.h stable-diffusion.cpp model.h model.cpp util.h util.cpp upscaler.cpp
+             ggml_extend.hpp clip.hpp common.hpp unet.hpp tae.hpp esrgan.hpp lora.hpp denoiser.hpp rng.hpp rng_philox.hpp)
+
+if(BUILD_SHARED_LIBS)
+    message("Build shared library")
+    add_definitions(-DSD_BUILD_SHARED_LIB)
+    target_compile_definitions(${SD_LIB} PRIVATE -DSD_BUILD_DLL)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+else()
+    message("Build static library")
+endif()
+
 
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+
+# see https://github.com/ggerganov/ggml/pull/682
+add_definitions(-DGGML_MAX_NAME=128)
+
 # deps
 add_subdirectory(ggml)
 
 add_subdirectory(thirdparty)
 
-set(SD_LIB stable-diffusion)
-
-add_library(${SD_LIB} stable-diffusion.h stable-diffusion.cpp model.h model.cpp util.h util.cpp)
 target_link_libraries(${SD_LIB} PUBLIC ggml zip)
 target_include_directories(${SD_LIB} PUBLIC . thirdparty)
 target_compile_features(${SD_LIB} PUBLIC cxx_std_11)

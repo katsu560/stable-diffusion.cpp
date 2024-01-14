@@ -4,6 +4,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -117,7 +118,11 @@ public:
     ggml_type get_sd_wtype();
     std::string load_merges();
     bool load_tensors(on_new_tensor_cb_t on_new_tensor_cb, ggml_backend_t backend);
-    int64_t cal_mem_size(ggml_backend_t backend);
+    bool load_tensors(std::map<std::string, struct ggml_tensor*>& tensors,
+                      ggml_backend_t backend,
+                      std::set<std::string> ignore_tensors = {});
+    bool save_to_gguf_file(const std::string& file_path, ggml_type type);
+    int64_t cal_mem_size(ggml_backend_t backend, ggml_type type = GGML_TYPE_COUNT);
     ~ModelLoader() = default;
 };
 #endif  // __MODEL_H__

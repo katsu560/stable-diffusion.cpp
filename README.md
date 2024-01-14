@@ -11,6 +11,8 @@ Inference of [Stable Diffusion](https://github.com/CompVis/stable-diffusion) in 
 - Plain C/C++ implementation based on [ggml](https://github.com/ggerganov/ggml), working in the same way as [llama.cpp](https://github.com/ggerganov/llama.cpp)
 - Super lightweight and without external dependencies
 - SD1.x, SD2.x and SDXL support
+    - !!!The VAE in SDXL encounters NaN issues under FP16, but unfortunately, the ggml_conv_2d only operates under FP16. Hence, a parameter is needed to specify the VAE that has fixed the FP16 NaN issue. You can find it here: [SDXL VAE FP16 Fix](https://huggingface.co/madebyollin/sdxl-vae-fp16-fix/blob/main/sdxl_vae.safetensors).
+
 - [SD-Turbo](https://huggingface.co/stabilityai/sd-turbo) and [SDXL-Turbo](https://huggingface.co/stabilityai/sdxl-turbo) support
 - 16-bit, 32-bit float support
 - 4-bit, 5-bit and 8-bit integer quantization support
@@ -115,6 +117,17 @@ cmake .. -DSD_CUBLAS=ON
 cmake --build . --config Release
 ```
 
+##### Using HipBLAS
+This provides BLAS acceleration using the ROCm cores of your AMD GPU. Make sure to have the ROCm toolkit installed.
+
+Windows User Refer to [docs/hipBLAS_on_Windows.md](docs%2FhipBLAS_on_Windows.md) for a comprehensive guide.
+
+```
+cmake .. -G "Ninja" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DSD_HIPBLAS=ON -DCMAKE_BUILD_TYPE=Release -DAMDGPU_TARGETS=gfx1100
+cmake --build . --config Release
+```
+
+
 ##### Using Metal
 
 Using Metal makes the computation run on the GPU. Currently, there are some issues with Metal when performing operations on very large matrices, making it highly inefficient at the moment. Performance improvements are expected in the near future.
@@ -124,7 +137,7 @@ cmake .. -DSD_METAL=ON
 cmake --build . --config Release
 ```
 
-### Using Flash Attention
+##### Using Flash Attention
 
 Enabling flash attention reduces memory usage by at least 400 MB. At the moment, it is not supported when CUBLAS is enabled because the kernel implementation is missing.
 
@@ -140,7 +153,7 @@ usage: ./bin/sd [arguments]
 
 arguments:
   -h, --help                         show this help message and exit
-  -M, --mode [txt2img or img2img]    generation mode (default: txt2img)
+  -M, --mode [MODEL]                 run mode (txt2img or img2img or convert, default: txt2img)
   -t, --threads N                    number of threads to use during computation (default: -1).
                                      If threads <= 0, then threads will be set to the number of CPU physical cores
   -m, --model [MODEL]                path to model
@@ -166,7 +179,8 @@ arguments:
   -s SEED, --seed SEED               RNG seed (default: 42, use random seed for < 0)
   -b, --batch-count COUNT            number of images to generate.
   --schedule {discrete, karras}      Denoiser sigma schedule (default: discrete)
-  --clip-skip N                      number of layers to skip of clip model (default: 0)
+  --clip-skip N                      ignore last layers of CLIP network; 1 ignores none, 2 ignores one layer (default: -1)
+                                     <= 0 represents unspecified, will be 1 for SD1.x, 2 for SD2.x
   --vae-tiling                       process vae in tiles to reduce memory usage
   -v, --verbose                      print extra info
 ```
@@ -181,11 +195,22 @@ You can specify the model weight type using the `--type` parameter. The weights 
 - `q5_0` or `q5_1` for 5-bit integer quantization
 - `q4_0` or `q4_1` for 4-bit integer quantization
 
+#### Convert to GGUF
+
+You can also convert weights in the formats `ckpt/safetensors/diffusers` to gguf and perform quantization in advance, avoiding the need for quantization every time you load them.
+
+For example:
+
+```sh
+./bin/sd -M convert -m ../models/v1-5-pruned-emaonly.safetensors -o  ../models/v1-5-pruned-emaonly.q8_0.gguf -v --type q8_0
+```
+
 #### txt2img example
 
 ```sh
 ./bin/sd -m ../models/sd-v1-4.ckpt -p "a lovely cat"
 # ./bin/sd -m ../models/v1-5-pruned-emaonly.safetensors -p "a lovely cat"
+# ./bin/sd -m ../models/sd_xl_base_1.0.safetensors --vae ../models/sdxl_vae-fp16-fix.safetensors -H 1024 -W 1024 -p "a lovely cat" -v
 ```
 
 Using formats of different precisions will yield results of varying quality.
@@ -237,7 +262,7 @@ Here's a simple example:
 | ----  |----    |
 | ![](./assets/without_lcm.png) |![](./assets/with_lcm.png)  |
 
-## Using TAESD to faster decoding
+#### Using TAESD to faster decoding
 
 You can use TAESD to accelerate the decoding of latent images by following these steps:
 
@@ -255,7 +280,7 @@ curl -L -O https://huggingface.co/madebyollin/taesd/blob/main/diffusion_pytorch_
 sd -m ../models/v1-5-pruned-emaonly.safetensors -p "a lovely cat" --taesd ../models/diffusion_pytorch_model.safetensors
 ```
 
-## Using ESRGAN to upscale results
+#### Using ESRGAN to upscale results
 
 You can use ESRGAN to upscale the generated images. At the moment, only the [RealESRGAN_x4plus_anime_6B.pth](https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth) model is supported. Support for more models of this architecture will be added soon.
 
