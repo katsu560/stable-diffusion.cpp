@@ -31,6 +31,7 @@ Inference of [Stable Diffusion](https://github.com/CompVis/stable-diffusion) in 
 - Faster and memory efficient latent decoding with [TAESD](https://github.com/madebyollin/taesd)
 - Upscale images generated with [ESRGAN](https://github.com/xinntao/Real-ESRGAN)
 - VAE tiling processing for reduce memory usage
+- Control Net support with SD 1.5
 - Sampling method
     - `Euler A`
     - `Euler`
@@ -53,13 +54,14 @@ Inference of [Stable Diffusion](https://github.com/CompVis/stable-diffusion) in 
 - [ ] More sampling methods
 - [ ] Make inference faster
     - The current implementation of ggml_conv_2d is slow and has high memory usage
-    - Implement Winograd Convolution 2D for 3x3 kernel filtering
 - [ ] Continuing to reduce memory usage (quantizing the weights of ggml_conv_2d)
-- [ ] Implement Textual Inversion (embeddings)
 - [ ] Implement Inpainting support
 - [ ] k-quants support
 
 ## Usage
+
+For most users, you can download the built executable program from the latest [release](https://github.com/leejet/stable-diffusion.cpp/releases/latest).
+If the built product does not meet your requirements, you can choose to build it manually.
 
 ### Get the Code
 
@@ -149,7 +151,7 @@ cmake --build . --config Release
 ### Run
 
 ```
-usage: ./bin/sd [arguments]
+usage: ./build/bin/sd [arguments]
 
 arguments:
   -h, --help                         show this help message and exit
@@ -159,16 +161,21 @@ arguments:
   -m, --model [MODEL]                path to model
   --vae [VAE]                        path to vae
   --taesd [TAESD_PATH]               path to taesd. Using Tiny AutoEncoder for fast decoding (low quality)
+  --control-net [CONTROL_PATH]       path to control net model
+  --embd-dir [EMBEDDING_PATH]        path to embeddings.
   --upscale-model [ESRGAN_PATH]      path to esrgan model. Upscale images after generate, just RealESRGAN_x4plus_anime_6B supported by now.
+  --upscale-repeats                  Run the ESRGAN upscaler this many times (default 1)
   --type [TYPE]                      weight type (f32, f16, q4_0, q4_1, q5_0, q5_1, q8_0)
                                      If not specified, the default is the type of the weight file.
   --lora-model-dir [DIR]             lora model directory
   -i, --init-img [IMAGE]             path to the input image, required by img2img
+  --control-image [IMAGE]            path to image condition, control net
   -o, --output OUTPUT                path to write result image to (default: ./output.png)
   -p, --prompt [PROMPT]              the prompt to render
   -n, --negative-prompt PROMPT       the negative prompt (default: "")
   --cfg-scale SCALE                  unconditional guidance scale: (default: 7.0)
   --strength STRENGTH                strength for noising/unnoising (default: 0.75)
+  --control-strength STRENGTH        strength to apply Control Net (default: 0.9)
                                      1.0 corresponds to full destruction of information in init image
   -H, --height H                     image height, in pixel space (default: 512)
   -W, --width W                      image width, in pixel space (default: 512)
@@ -182,6 +189,8 @@ arguments:
   --clip-skip N                      ignore last layers of CLIP network; 1 ignores none, 2 ignores one layer (default: -1)
                                      <= 0 represents unspecified, will be 1 for SD1.x, 2 for SD2.x
   --vae-tiling                       process vae in tiles to reduce memory usage
+  --control-net-cpu                  keep controlnet in cpu (for low vram)
+  --canny                            apply canny preprocessor (edge detection)
   -v, --verbose                      print extra info
 ```
 
@@ -313,6 +322,13 @@ docker run -v /path/to/models:/models -v /path/to/output/:/output sd [args...]
 |  **Memory** (txt2img - 512 x 512) | ~2.8G | ~2.3G | ~2.1G | ~2.0G | ~2.0G | ~2.0G | ~2.0G |
 |  **Memory** (txt2img - 512 x 512) *with Flash Attention* | ~2.4G | ~1.9G | ~1.6G | ~1.5G | ~1.5G | ~1.5G | ~1.5G |
 
+## Bindings
+
+These projects wrap `stable-diffusion.cpp` for easier use in other languages/frameworks.
+
+* Golang: [seasonjs/stable-diffusion](https://github.com/seasonjs/stable-diffusion)
+* C#: [DarthAffe/StableDiffusion.NET](https://github.com/DarthAffe/StableDiffusion.NET)
+
 ## Contributors
 
 Thank you to all the people who have already contributed to stable-diffusion.cpp!
@@ -325,6 +341,7 @@ Thank you to all the people who have already contributed to stable-diffusion.cpp
 - [stable-diffusion](https://github.com/CompVis/stable-diffusion)
 - [stable-diffusion-stability-ai](https://github.com/Stability-AI/stablediffusion)
 - [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
+- [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
 - [k-diffusion](https://github.com/crowsonkb/k-diffusion)
 - [latent-consistency-model](https://github.com/luosiallen/latent-consistency-model)
 - [generative-models](https://github.com/Stability-AI/generative-models/)
